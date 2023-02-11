@@ -1,0 +1,111 @@
+1.)
+
+duas tabelas com as imagens e os fatores de qualidade 
+alta - <75
+medio - 50
+baixo - >25
+preencher as celulas com a taxa de compressao ex.:(4:1 , 8:1, 20:1, etc)
+
+a outra tabela é para a qualidade qualidade a ollho nu??? (subjetivo)
+
+comentar: em que casos é que a compressao funciona melhor (relaçao qualidade/compressao) 
+(codec jpeg é para imagens fotograficas transiçoes de cor smooth) 
+
+2.)
+
+jpeg.py
+
+def encoder(tipo de subamostragem, qualidade, ...):
+
+def decoder(...):
+
+def main():
+    ...= encoder(...)
+    decoder(...)
+
+if __name__ == "__main__":
+    main()
+    
+3.)
+
+import matplotlib.pyplot as plt 
+
+img = plt.imread('test.bmp') (ler imagem)
+img.shape (devolve a forma da matriz)
+(297, 400, 3) (3 matrizes [297, 400], cada uma é um canal rgb)
+plt.imshow(img) (mostrar imagem)
+%matplotlib (funçao magica!!! "criar plot")
+criar funçao para ver imagens (para agilizar) 
+plt.axis('off') (tirar eixos) 
+plt.title('my image') (titulo)
+plt.figure() (criar janela para cada imagem)
+plt.close('all') (fecha tudo porra)
+
+-------(criar mapas de cores)------
+import matplotlib.colors as clr
+
+cmGray = clr.LinearSegmentedColormap.from_list('gray', [(0,0,0), (1,1,1)], 256)
+
+cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
+
+--------buscar canal--------
+R = img[:,:,0] (canal vermelho)
+B = img[:,:,2] (canal azul)
+
+plt.imshow(R, cmGray) canal vermelho em escala de cinza
+plt.imshow(R, cmRed) canal vermelho em escala de vermelho
+
+codificar (separar os 3 canais)
+descodificar (juntar os 3 canais)
+
+[nl, nc, ch] = img.shape
+imgRec = np.zeros((nl, nc, ch))
+
+imgRec[:,:,0] = R
+imgRec[:,:,1] = G
+imgRec[:,:,2] = B
+
+
+4.)
+
+jpeg tamanho tem de ser multiplos de 32 (32x32, 64x64)
+
+nnl = 32 - nl%32 = (numero de novas linhas)
+
+ll = x[nl-1, :] (a ultima linha ??? -- trolou)
+
+------- Padding--------
+
+ll = x[nl-1, :] [np.newaxis, :] (criar nova linha)
+ll = x[nl-1, :] [:, np.newaxis] (criar nova coluna)
+
+rep = ll.repeat(nnl, axis = 0) (criar nnl linhas)
+rep = ll.repeat(nnl, axis = 1) (criar nnl colunas)
+
+xp = np.vstack([x, rep]) (vertical)
+xp = np.hstack([x, rep]) (horizontal)
+
+GG MERMÃO
+
+-----------------------
+
+
+5.)
+
+slide 46 transformar imagem RGB para YCbCr usar valores da matriz
+
+Y = T[0,0] * R + T[0,1] * G + T[0,2]  * B (Y vai ser uma matriz com a dimensao da imagem original) (R vai ser matriz de valores reais)  
+
+NAO USAR A MATRIZ O SLIDE 47 !!!!!!!!!!!
+
+DECODER ACHO EU???
+CALCULAR INVERSA:
+
+Ti = np.linalg.inv(T)
+
+R = Ti[0,0] * Y + Ti[0,1] * (Cb -128) + Ti[0,2] * (Cr -128) 
+R [R > 255] = 255 (antes do cast)
+R [R < 0] = 0
+R = np.round(R).astype(np.uint8)
+
+xr = xp[:nl, :nc] (remover as linhas extra do padding)
