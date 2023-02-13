@@ -10,7 +10,7 @@ def decoder():
     pass
 
 def colorMapEnc(img):
-    
+    print(img.shape)
     #Encoder
     cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
@@ -36,9 +36,38 @@ def colorMapEnc(img):
     imgRec[:,:,2] = B
     showImage(imgRec.astype(np.uint8))
     
+def padding(img):
+
+    xp = img
+    shape = img.shape
+    
+    n = max(shape[0], shape[1])
+
+    while n % 32 != 0:
+        n += 1
+
+    nl = n - shape[0]
+    nc = n - shape[1]
+    
+    ll = img[shape[0] - 1, :] [np.newaxis, :]
+    
+    #print(ll, cc)
+    
+    repl = ll.repeat(nl, axis = 0) 
     
 
+    xp = np.vstack([img, repl]) 
+
+    cc = xp[:, shape[1] -1] [:, np.newaxis]
+    repc = cc.repeat(nc, axis = 1)
+
+    xt = np.hstack([xp, repc])      
+
+    print(xt.shape)
+    showImage(xt)
     
+    
+
 def showImageColormap(auxColormap1,auxColormap2):
     plt.figure()
     plt.axis("off")
@@ -60,11 +89,12 @@ def main():
     img3 = plt.imread('imagens/peppers.bmp')
 
     #Mostrar imagens
-    showImage(img1)
-    colorMapEnc(img1)
+    #showImage(img1)
+    #colorMapEnc(img1)
     #showImage(img2)
     #showImage(img3)
-   #plt.close('all')
+    #plt.close('all')
+    padding(img1)
     
     
 
