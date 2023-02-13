@@ -66,6 +66,16 @@ def padding(img):
     print(xt.shape)
     showImage(xt)
     
+    return xt
+
+
+def padding_inv(pad, shape):
+    nl = pad.shape[0] - shape[0]
+    nc = pad.shape[1] - shape[1]
+    
+    ipad = pad[:-nl,:-nc]
+    showImage(ipad)
+    
     
 
 def showImageColormap(auxColormap1,auxColormap2):
@@ -94,8 +104,8 @@ def main():
     #showImage(img2)
     #showImage(img3)
     #plt.close('all')
-    padding(img1)
-    
+    pad = padding(img1)
+    padding_inv(pad, img1.shape)
     
 
 if __name__ == '__main__':
