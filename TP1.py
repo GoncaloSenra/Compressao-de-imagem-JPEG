@@ -25,17 +25,19 @@ def colorMapEnc(img):
     showImageColormap(B, cmBlue)
     
     
-    '''
-    N funfa
+    
     #Decoder
     [nl, nc, ch] = img.shape
     imgRec = np.zeros((nl, nc, ch))
+    
+    
     imgRec[:,:,0] = R
     imgRec[:,:,1] = G
     imgRec[:,:,2] = B
-    showImage(imgRec)
-    '''
+    showImage(imgRec.astype('int'))
     
+    
+
     
 def showImageColormap(auxColormap1,auxColormap2):
     plt.figure()
@@ -62,7 +64,7 @@ def main():
     colorMapEnc(img1)
     #showImage(img2)
     #showImage(img3)
-    
+   #plt.close('all')
     
     
 
