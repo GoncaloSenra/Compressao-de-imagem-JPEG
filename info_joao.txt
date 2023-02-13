@@ -1,0 +1,96 @@
+import matplotlib.pylot as pylot
+img = plt.imread('test.bmp')
+
+notas: img.shape para ter os valores das z matrizes, x por y
+notas: plt.imshow(img) para mostrar a imagem
+
+
+%matplotlib --->>> permite cirar uma janela no so para ver a imagem "funcao magica"
+
+plt.axis('off') -> tira os eixos da imagem
+plt.title("my image') -> titulo da imagem
+
+plt.figure() -> cria uma janela para cada imagem
+
+notas: em cada execuccao fechar tudo com plt.close('all')
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Funcoes Essenciais ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+======================Color maps===================
+
+Codificacao (separar os 3 canais):
+    silde 34, como criar mapas de cores:
+
+    import matplotlib.colors as clr 
+
+    (EXEMPLO --- mapa de cores cinzento e red)
+    cmGray = clr.LinearSegmentedColormap.from_list('gray', [(0,0,0), (1,1,1)], 256) -> vai criar 256 cores entre 000 e 111, preto e branco
+
+                                                (  . ..  , cores(valor das cores nos tuplos), quantas cores no colormap)
+
+    gmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
+    
+        site onde o stor tava - https://matplotlib.org/stable/api/_as_gen/matplotlib.colors.LinearSegmentedColormap.html
+
+    como ir buscar os canais: (exemplo ir buscar o canal red ou seja um dos canais do img.shape)
+
+    R = img[:,:,0] (1º dimensao queremos tudo, segunda queremos tudo, terceira queremos o primeiro)
+    B = img[:,:,2]
+
+    -vizualizar o canal vermelho com o colormap :
+    plt.imshow(R,cmRed)
+
+
+Descodificacao (juntar os 3 canais):
+    import numpy as np 
+    [nl, nc, nch] = img.shape
+    imgRec = np.zeros((nl,nc,nch))
+    imgRec[:,:,0] = R
+    imgRec[:,:,1] = G 
+    imgRec[:,:,2] = B
+
+ ===================================================
+
+
+
+ ================== PONTO 4 ===============================
+se a imagem n tiver tamanho multiplo de 32 tipo 60*60 temos de aumentar ao ir buscar a ultima linha, saber quantas linhas faltam,
+criar uma matriz aux com o numero de linhas que faltam e junta las
+
+ultimaLinha = x[nl -1, :] --> ERRADA matriz unidimensional
+
+ultima linha = x[nl -1, :][np.newaxis, :] matriz bidimensional com um novo eixo horizontal
+
+criar replica com a ultima linha:
+
+rep = ultimalinha.repeat(nnl, axis = 0) (numero de novas linha -nnl, com o axis = 0 ele mete as linhas por baixo se for 1 mete a direita)
+
+Para as linhas:
+xp = np.vstack([x, rep])
+
+Para as colunas:
+xp = np.hstack([x, rep])
+ ==========================================================
+
+
+ ======================== Ponto 5 ======================
+slides nº 45/46
+
+usar os valores da matriz e nao das formulas  
+
+matriz = matriz[0,0]*R + matriz[0,1]*G + matriz[0,2]*B
+
+para a matriz inversa n usar a matriz dos slides, temos de calcular a inversa da original para ter os valores mais precisos
+
+com matrizInv = np.linalg.inv(matriz)
+
+R = matrizInv[0,0]*Y + matrizInv[0,1]*(Cb-128) + matrizInv[0,2]*(Cr-128)
+
+R = np.round(R).astype(np.uint8)...???
+
+truncar os dados, tudo superior a 255 passa a 255 para resolver um problema ????
+R[R>55] = 255 ante do typecast
+R[R<0] = 0
+ =======================================================
