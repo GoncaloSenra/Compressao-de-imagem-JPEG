@@ -34,7 +34,7 @@ def colorMapEnc(img):
     imgRec[:,:,0] = R
     imgRec[:,:,1] = G
     imgRec[:,:,2] = B
-    showImage(imgRec.astype('int'))
+    showImage(imgRec.astype(np.uint8))
     
     
 
