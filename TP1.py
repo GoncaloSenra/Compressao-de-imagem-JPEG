@@ -1,17 +1,25 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.colors as clr
-from PIL import Image
 
-def encoder():
-    pass
+def encoder(img):
+    
+    #3) Color maps RGB
+    colorMapEnc(img)
+    
+    #4) Padding
+    padding(img)
 
-def decoder():
+    #5) Convert to YCbCr
+    ycbcr = convert_ycbcr(img)
+
+    
+
+def decoder(img, shape):
     pass
 
 def colorMapEnc(img):
-    print(img.shape)
-    #Encoder
+    
     cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
@@ -20,9 +28,10 @@ def colorMapEnc(img):
     G = img[:,:,1]
     B = img[:,:,2]
     
-    showImageColormap(R, cmRed)
-    showImageColormap(G, cmGreen)
-    showImageColormap(B, cmBlue)
+
+    showImageColormap(R, "R", cmRed)
+    showImageColormap(G, "G", cmGreen)
+    showImageColormap(B, "B", cmBlue)
     
     
     
@@ -34,7 +43,7 @@ def colorMapEnc(img):
     imgRec[:,:,0] = R
     imgRec[:,:,1] = G
     imgRec[:,:,2] = B
-    showImage(imgRec.astype(np.uint8))
+    showImageColormap(imgRec.astype(np.uint8), "RGB")
     
 def padding(img):
 
@@ -51,7 +60,6 @@ def padding(img):
     
     ll = img[shape[0] - 1, :] [np.newaxis, :]
     
-    #print(ll, cc)
     
     repl = ll.repeat(nl, axis = 0) 
     
@@ -63,8 +71,7 @@ def padding(img):
 
     xt = np.hstack([xp, repc])      
 
-    print(xt.shape)
-    showImage(xt)
+    showImageColormap(xt, "Padding")
     
     return xt
 
@@ -74,7 +81,7 @@ def padding_inv(pad, shape):
     nc = pad.shape[1] - shape[1]
     
     ipad = pad[:-nl,:-nc]
-    showImage(ipad)
+    showImageColormap(ipad, "Reversed padding")
 
 def convert_ycbcr(img):
     mat = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5], [0.5, -0.418688, -0.081312]])
@@ -87,65 +94,43 @@ def convert_ycbcr(img):
     y[:,:,1] = y[:,:,1] + 128
     y[:,:,2] = y[:,:,2] + 128
     
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y.astype(np.uint8))
-    plt.axis("off")
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y[:,:,0].astype(np.uint8), cmap="gray")
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y[:,:,1].astype(np.uint8))
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y[:,:,2].astype(np.uint8))
 
+    showImageColormap(y.astype(np.uint8), "YCbCr")
+    
+    showImageColormap(y[:,:,0].astype(np.uint8), "Y", "gray")
+    
+    showImageColormap(y[:,:,1].astype(np.uint8), "Cb")
+    
+    showImageColormap(y[:,:,2].astype(np.uint8), "Cr")
+    
     return y
 
 def convert_rgb(img):
     mat = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5], [0.5, -0.418688, -0.081312]])
 
     matI = np.linalg.inv(mat)
-    print(matI)
     
+    img[:,:,0] = img[:,:,0] - 0
+    img[:,:,1] = img[:,:,1] - 128
+    img[:,:,2] = img[:,:,2] - 128
+
     y = np.dot(img, matI.T)
-    y[:,:,0] = y[:,:,0] - 0
-    y[:,:,1] = y[:,:,1] - 128
-    y[:,:,2] = y[:,:,2] - 128
-
-    y[y>255] = 255
-    y[y<0] = 0
-    
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y.astype(np.uint8))
-    plt.axis("off")
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y[:,:,0].astype(np.uint8))
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y[:,:,1].astype(np.uint8))
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(y[:,:,2].astype(np.uint8))
-
-    
     
 
-def showImageColormap(auxColormap1,auxColormap2):
+    #y[y>255] = 255
+    #y[y<0] = 0
+    
+    showImageColormap(y.astype(np.uint8), "RGB")
+ 
+    
+#3.3) 
+def showImageColormap(auxColormap1, title = None, auxColormap2 = None):
     plt.figure()
     plt.axis("off")
+    if title is not None:
+        plt.title(title)
     plt.imshow(auxColormap1, auxColormap2)
-    
-    
-def showImage(img):
-    plt.figure()
-    plt.axis("off")
-    plt.imshow(img, cmap = "gray")
-    #print(img.shape)
-    
+
     
 def main():
     
@@ -154,17 +139,11 @@ def main():
     img2 = plt.imread('imagens/logo.bmp')    
     img3 = plt.imread('imagens/peppers.bmp')
 
-    #Mostrar imagens
-    #showImage(img1)
-    #colorMapEnc(img1)
-    #showImage(img2)
-    #showImage(img3)
-    #plt.close('all')
-    #pad = padding(img1)
-    #padding_inv(pad, img1.shape)
-    ycbcr = convert_ycbcr(img1)
-    convert_rgb(ycbcr)
+    #Escolher imagem
+    imgx = img1
 
+    encoder(imgx)
+    decoder(imgx, imgx.shape)
 
 if __name__ == '__main__':
     main()
