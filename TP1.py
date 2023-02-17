@@ -2,13 +2,38 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.colors as clr
 
+"""
+#SAMPLING (6)
+ 4:1:2 Cr media de 4 valores e Cb media de 2 valores
+ 4:2:0 Ambos os canais sao comprimmidos de igual forma (2:1), mas na Horizontal e na Vertical
+ import cv2
+ cv2.resize(matriz, fatores de compressao, tipo de interpolacao (linear, cubica, etc))
+
+                       (4:2:2)              (4:2:0)
+       300x300         150(H):300(V)        150(H):150(V)
+       
+
+no decoder: fazer o contrario se foi reduzido a metade passar para o dobro (operaçao destrutiva)
+
+
+#DCT (7)
+usar dct sobre os canais que queremos
+
+"""
+
+
 def encoder(img):
     
     #3) Color maps RGB
-    colorMapEnc(img)
+    R, G, B , cmRed, cmGreen, cmBlue = colorMapEnc(img)
     
+        
     #4) Padding
     padding(img)
+    padding(R, cmRed)
+    padding(G, cmGreen)
+    padding(B, cmBlue)
+    
 
     #5) Convert to YCbCr
     ycbcr = convert_ycbcr(img)
@@ -16,7 +41,7 @@ def encoder(img):
     
 
 def decoder(img, shape):
-    pass
+    convert_rgb(img)
 
 def colorMapEnc(img):
     
@@ -32,9 +57,8 @@ def colorMapEnc(img):
     showImageColormap(R, "R", cmRed)
     showImageColormap(G, "G", cmGreen)
     showImageColormap(B, "B", cmBlue)
-    
-    
-    
+
+    """
     #Decoder
     [nl, nc, ch] = img.shape
     imgRec = np.zeros((nl, nc, ch))
@@ -44,19 +68,24 @@ def colorMapEnc(img):
     imgRec[:,:,1] = G
     imgRec[:,:,2] = B
     showImageColormap(imgRec.astype(np.uint8), "RGB")
+    """
+    return R, G, B, cmRed, cmGreen, cmBlue
     
-def padding(img):
+def padding(img, colormap = None):
 
     xp = img
     shape = img.shape
-    
-    n = max(shape[0], shape[1])
+    c = shape[1]
+    l = shape[0]
 
-    while n % 32 != 0:
-        n += 1
+    while c % 32 != 0:
+        c += 1
+        
+    while l % 32 != 0:
+        l += 1
 
-    nl = n - shape[0]
-    nc = n - shape[1]
+    nl = l - shape[0]
+    nc = c - shape[1]
     
     ll = img[shape[0] - 1, :] [np.newaxis, :]
     
@@ -71,7 +100,9 @@ def padding(img):
 
     xt = np.hstack([xp, repc])      
 
-    showImageColormap(xt, "Padding")
+    showImageColormap(xt, "Padding", colormap)
+    
+    #print(xt.shape)
     
     return xt
 
@@ -90,18 +121,18 @@ def convert_ycbcr(img):
     #y = np.zeros_like(img)
     #y = mat[0,0] * img[:,:,0] + mat[0,1] * img[:,:,1] + mat[0,2]  * img[:,:,2]
     
-    y[:,:,0] = y[:,:,0] + 0
+    #y[:,:,0] = y[:,:,0] + 0
     y[:,:,1] = y[:,:,1] + 128
     y[:,:,2] = y[:,:,2] + 128
     
 
-    showImageColormap(y.astype(np.uint8), "YCbCr")
+    showImageColormap(y, "YCbCr")
     
-    showImageColormap(y[:,:,0].astype(np.uint8), "Y", "gray")
+    showImageColormap(y[:,:,0], "Y", "gray")
     
-    showImageColormap(y[:,:,1].astype(np.uint8), "Cb")
+    showImageColormap(y[:,:,1], "Cb", "gray")
     
-    showImageColormap(y[:,:,2].astype(np.uint8), "Cr")
+    showImageColormap(y[:,:,2], "Cr", "gray")
     
     return y
 
@@ -117,10 +148,12 @@ def convert_rgb(img):
     y = np.dot(img, matI.T)
     
 
-    #y[y>255] = 255
-    #y[y<0] = 0
+    y[y>255] = 255
+    y[y<0] = 0
     
-    showImageColormap(y.astype(np.uint8), "RGB")
+    y = np.round(y).astype(np.uint8)
+    
+    showImageColormap(y, "RGB")
  
     
 #3.3) 
@@ -130,6 +163,7 @@ def showImageColormap(auxColormap1, title = None, auxColormap2 = None):
     if title is not None:
         plt.title(title)
     plt.imshow(auxColormap1, auxColormap2)
+    plt.show()
 
     
 def main():
@@ -143,7 +177,7 @@ def main():
     imgx = img1
 
     encoder(imgx)
-    decoder(imgx, imgx.shape)
+    #decoder(imgx, imgx.shape)
 
 if __name__ == '__main__':
     main()
