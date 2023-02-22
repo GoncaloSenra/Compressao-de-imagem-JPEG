@@ -24,28 +24,39 @@ def encoder(img):
     
         
     #4) Padding
-    #padding_img , l ,c= padding(img)
-    R_padding, lr, cr = padding(R, cmRed)
-    G_padding, lg, cg = padding(G, cmGreen)
-    B_padding, lb, cb = padding(B, cmBlue)
+    #padding_img , l , c= padding(img)
+    R_padding, l, c = padding(R, cmRed)
+    G_padding, l, c = padding(G, cmGreen)
+    B_padding, l, c = padding(B, cmBlue)
     
 
     #5) Convert to YCbCr
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
 
-    return y, cb, cr, lr, cr
+    return y, cb, cr ,l, c 
     
 
 def decoder(y, cb, cr, line, col):
+    
+    cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
+    cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
+    cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
     
     R_dec, G_dec, B_dec = convert_rgb(y, cb, cr)
     
     
     R_upad = padding_inv(R_dec, line, col)
+    showImageColormap(R_upad, "R_decode", cmRed)
+    
     G_upad = padding_inv(G_dec, line, col)
+    showImageColormap(R_upad, "G_decode", cmGreen)
+    
     B_upad = padding_inv(B_dec, line, col)
+    showImageColormap(R_upad, "B_decode", cmBlue)
+    
     
     join_channels(R_upad, G_upad, B_upad, line, col)
+    
     
     
     
@@ -126,12 +137,16 @@ def padding(img, colormap = None):
 
 
 def padding_inv(padding_img, line, col):
-    nl = padding_img.shape[0] - line
-    nc = padding_img.shape[1] - col
-    print(padding_img)
+    nl = (padding_img.shape[0] - line)
+    nc = (padding_img.shape[1] - col)
+   # print(padding_img)
+    #print(padding_img.shape[1])
+    #print(col)
     #print(padding_img[0][0].astype)
     un_padding = padding_img[:-nl,:-nc]
-    showImageColormap(un_padding, "Reversed padding")
+    
+    
+    #showImageColormap(un_padding, "Reversed padding")
     
     return un_padding
     #print(ipad.shape)
@@ -143,9 +158,9 @@ def convert_ycbcr(R, G, B):
 
     #y = np.dot(img, mat.T)
     
-    y = mat[0,0] * R 
-    cb = (mat[0,1] * G) + 128 
-    cr = (mat[0,2]  * B) + 128
+    y = mat[0,0] * R + mat[0,1] * G + mat[0,2] * B
+    cb = (mat[1,0] * R + mat[1,1] * G + mat[1,2] * B) + 128 
+    cr = (mat[2,0] * R + mat[2,1] * G + mat[2,2] * B) + 128
     #y = np.zeros_like(img)
     #y = mat[0,0] * img[:,:,0] + mat[0,1] * img[:,:,1] + mat[0,2]  * img[:,:,2]
     
@@ -169,26 +184,30 @@ def convert_rgb(y, cb, cr):
 
     matI = np.linalg.inv(mat)
     
-    R = matI[0,0] * y 
-    G = (matI[0,1] * cb) - 128 
-    B = (matI[0,2]  * cr) - 128
+    R = matI[0,0] * y + matI[0,1] *(cb -128) + matI[0,2] * (cr -128)
+    G = matI[1,0] * y + matI[1,1] *(cb -128) + matI[1,2] * (cr -128)
+    B = matI[2,0] * y + matI[2,1] *(cb -128) + matI[2,2] * (cr -128)
     #rgb_img = np.dot(img, matI.T)
     #rgb_img = matI[0,0] * y + matI[0,1] * (cb -128) + matI[0,2] * (cr -128) 
 
-    R[R>255] = 255
-    R[R<0] = 0
-    G[G>255] = 255
-    G[G<0] = 0
+   
+    
     B[B>255] = 255
     B[B<0] = 0
+    
+    R[R>255] = 255
+    R[R<0] = 0
+    
+    G[G>255] = 255
+    G[G<0] = 0
     
     R = np.round(R).astype(np.uint8)
     G = np.round(G).astype(np.uint8)
     B = np.round(B).astype(np.uint8)
     
-    showImageColormap(R, "R_conver_rgb")
-    showImageColormap(G, "G_conver_rgb")
-    showImageColormap(B, "B_conver_rgb")
+    #showImageColormap(R, "R_conver_rgb")
+    #showImageColormap(G, "G_conver_rgb")
+    #showImageColormap(B, "B_conver_rgb")
     
     return R, G, B
  
@@ -213,7 +232,7 @@ def main():
     imgx = img1
 
     y, cb, cr, line, col = encoder(imgx)
-    decoder(y, cb, cr, line, col)
+    decoder(y,cb ,cr ,line, col)
 
 if __name__ == '__main__':
     main()
