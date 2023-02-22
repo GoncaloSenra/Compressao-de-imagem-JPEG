@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.colors as clr
+import cv2
 
 """
 #SAMPLING (6)
@@ -32,6 +33,8 @@ def encoder(img):
 
     #5) Convert to YCbCr
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
+    down_sampling(cb, cr, (4, 2, 1))
+
 
     return y, cb, cr ,l, c 
     
@@ -58,7 +61,49 @@ def decoder(y, cb, cr, line, col):
     join_channels(R_upad, G_upad, B_upad, line, col)
     
     
+def down_sampling(cb, cr, factor):
+    height, width = cr.shape[:2]
+    xcb = 0
+    xcr = 0
+    aux = 0
+    cb_d = 0
+    cr_d = 0
+
+    if factor[2] != 0:
+        aux = 1
+        xcb = factor[0] / factor[2]
+        xcr = factor[0] / factor[1]
+    else:
+        xcb = factor[0] / factor[1]
+        xcr = factor[0] / factor[1]
+
+    # Specify the new dimensions for the downscaled image
     
+    if aux == 1:
+        width_cb = int(width / xcb)
+        width_cr = int(width / xcr)
+
+        cb_d = cv2.resize(cb, (width_cb, height), interpolation=cv2.INTER_AREA)
+        cr_d = cv2.resize(cr, (width_cr, height), interpolation=cv2.INTER_AREA)
+    
+    else:
+        height_cb = int(height / xcb)
+        width_cb = int(width / xcb)
+        
+        height_cr = int(height / xcr)
+        width_cr = int(width / xcr)
+
+        cb_d = cv2.resize(cb, (width_cb, height_cb), interpolation=cv2.INTER_AREA)
+        cr_d = cv2.resize(cr, (width_cr, height_cr), interpolation=cv2.INTER_AREA)
+    
+    
+
+    # Use cv2.resize() to downsample the image
+    
+    showImageColormap(cb_d, "down_cb", "gray")
+    showImageColormap(cr_d, "down_cr", "gray")
+
+    return cb_d, cr_d
     
 
 def join_channels(R, G, B, line, col):
@@ -232,7 +277,7 @@ def main():
     imgx = img1
 
     y, cb, cr, line, col = encoder(imgx)
-    decoder(y,cb ,cr ,line, col)
+    #decoder(y,cb ,cr ,line, col)
 
 if __name__ == '__main__':
     main()
