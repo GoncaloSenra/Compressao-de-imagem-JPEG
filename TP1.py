@@ -24,25 +24,45 @@ def encoder(img):
     
         
     #4) Padding
-    padding_img , l ,c= padding(img)
-    padding(R, cmRed)
-    padding(G, cmGreen)
-    padding(B, cmBlue)
+    #padding_img , l ,c= padding(img)
+    R_padding, lr, cr = padding(R, cmRed)
+    G_padding, lg, cg = padding(G, cmGreen)
+    B_padding, lb, cb = padding(B, cmBlue)
     
 
     #5) Convert to YCbCr
-    ycbcr = convert_ycbcr(padding_img)
-    
-    
-    return ycbcr, l, c 
+    y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
+
+    return y, cb, cr, lr, cr
     
 
-def decoder(img, line, col):
+def decoder(y, cb, cr, line, col):
     
-    imgRGB  = convert_rgb(img)
+    R_dec, G_dec, B_dec = convert_rgb(y, cb, cr)
     
-    padding_inv(imgRGB, line, col)
+    
+    R_upad = padding_inv(R_dec, line, col)
+    G_upad = padding_inv(G_dec, line, col)
+    B_upad = padding_inv(B_dec, line, col)
+    
+    join_channels(R_upad, G_upad, B_upad, line, col)
+    
+    
+    
 
+def join_channels(R, G, B, line, col):
+    
+    
+    imgRec = np.zeros((line, col, 3))
+    
+    
+    imgRec[:,:,0] = R
+    imgRec[:,:,1] = G
+    imgRec[:,:,2] = B
+    
+    
+    showImageColormap(imgRec.astype(np.uint8), "Decoded image")
+    
 
 def colorMapEnc(img):
     
@@ -108,53 +128,69 @@ def padding(img, colormap = None):
 def padding_inv(padding_img, line, col):
     nl = padding_img.shape[0] - line
     nc = padding_img.shape[1] - col
-    
+    print(padding_img)
+    #print(padding_img[0][0].astype)
     un_padding = padding_img[:-nl,:-nc]
     showImageColormap(un_padding, "Reversed padding")
+    
+    return un_padding
     #print(ipad.shape)
 
-def convert_ycbcr(img):
+
+
+def convert_ycbcr(R, G, B):
     mat = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5], [0.5, -0.418688, -0.081312]])
 
-    y = np.dot(img, mat.T)
+    #y = np.dot(img, mat.T)
+    
+    y = mat[0,0] * R 
+    cb = (mat[0,1] * G) + 128 
+    cr = (mat[0,2]  * B) + 128
     #y = np.zeros_like(img)
     #y = mat[0,0] * img[:,:,0] + mat[0,1] * img[:,:,1] + mat[0,2]  * img[:,:,2]
     
     #y[:,:,0] = y[:,:,0] + 0
-    y[:,:,1] = y[:,:,1] + 128
-    y[:,:,2] = y[:,:,2] + 128
+    #y[:,:,1] = y[:,:,1] + 128
+    #y[:,:,2] = y[:,:,2] + 128
     
 
     #showImageColormap(y, "YCbCr")
     
-    showImageColormap(y[:,:,0], "Y", "gray")
+    showImageColormap(y, "Y", "gray")
     
-    showImageColormap(y[:,:,1], "Cb", "gray")
+    showImageColormap(cb, "Cb", "gray")
     
-    showImageColormap(y[:,:,2], "Cr", "gray")
+    showImageColormap(cr, "Cr", "gray")
     
-    return y
+    return y, cb, cr
 
-def convert_rgb(img):
+def convert_rgb(y, cb, cr):
     mat = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5], [0.5, -0.418688, -0.081312]])
 
     matI = np.linalg.inv(mat)
     
-    img[:,:,0] = img[:,:,0] - 0
-    img[:,:,1] = img[:,:,1] - 128
-    img[:,:,2] = img[:,:,2] - 128
+    R = matI[0,0] * y 
+    G = (matI[0,1] * cb) - 128 
+    B = (matI[0,2]  * cr) - 128
+    #rgb_img = np.dot(img, matI.T)
+    #rgb_img = matI[0,0] * y + matI[0,1] * (cb -128) + matI[0,2] * (cr -128) 
 
-    rgb_img = np.dot(img, matI.T)
+    R[R>255] = 255
+    R[R<0] = 0
+    G[G>255] = 255
+    G[G<0] = 0
+    B[B>255] = 255
+    B[B<0] = 0
     
-
-    rgb_img[rgb_img>255] = 255
-    rgb_img[rgb_img<0] = 0
+    R = np.round(R).astype(np.uint8)
+    G = np.round(G).astype(np.uint8)
+    B = np.round(B).astype(np.uint8)
     
-    rgb_img = np.round(rgb_img).astype(np.uint8)
+    showImageColormap(R, "R_conver_rgb")
+    showImageColormap(G, "G_conver_rgb")
+    showImageColormap(B, "B_conver_rgb")
     
-    showImageColormap(rgb_img, "RGB")
-    
-    return rgb_img
+    return R, G, B
  
     
 #3.3) 
@@ -168,7 +204,6 @@ def showImageColormap(auxColormap1, title = None, auxColormap2 = None):
 
     
 def main():
-    
     #Ler imagens
     img1 = plt.imread('imagens/barn_mountains.bmp')
     img2 = plt.imread('imagens/logo.bmp')    
@@ -177,8 +212,8 @@ def main():
     #Escolher imagem
     imgx = img1
 
-    out, line, col = encoder(imgx)
-    decoder(out , line, col)
+    y, cb, cr, line, col = encoder(imgx)
+    decoder(y, cb, cr, line, col)
 
 if __name__ == '__main__':
     main()
