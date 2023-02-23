@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.colors as clr
 import cv2
+from scipy.fftpack import dct, idct
+
 
 """
 #SAMPLING (6)
@@ -35,8 +37,9 @@ def encoder(img):
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
     cb, cr = down_sampling(cb, cr)
 
+    y_dct, cb_dct, cr_dct = dct_convert(y, cb, cr)
 
-    return y, cb, cr ,l, c 
+    return y_dct, cb_dct, cr_dct, l, c 
     
 
 def decoder(y, cb, cr, line, col):
@@ -45,6 +48,8 @@ def decoder(y, cb, cr, line, col):
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
     
+    y, cb, cr = dct_invert(y, cb, cr)
+
     cb, cr = up_sampling(cb, cr)
 
     R_dec, G_dec, B_dec = convert_rgb(y, cb, cr)
@@ -62,7 +67,41 @@ def decoder(y, cb, cr, line, col):
     
     join_channels(R_upad, G_upad, B_upad, line, col)
     
+
+def dct_convert(y_d, cb_d, cr_d):
+
+    y_dct = dct(dct(y_d, norm="ortho").T, norm="ortho").T
+    cb_dct = dct(dct(cb_d, norm="ortho").T, norm="ortho").T
+    cr_dct = dct(dct(cr_d, norm="ortho").T, norm="ortho").T
+
+    plt.figure()
+    plt.title("DCT y")
+    plt.imshow(np.log(np.abs(y_dct) + 0.0001))
+    plt.figure()
+    plt.title("DCT cb")
+    plt.imshow(np.log(np.abs(cb_dct) + 0.0001))
+    plt.figure()
+    plt.title("DCT cr")
+    plt.imshow(np.log(np.abs(cr_dct) + 0.0001))
     
+    #showImageColormap(y_dct, "DCT Y", "gray")
+    #showImageColormap(cb_dct, "DCT CB", "gray")
+    #showImageColormap(cr_dct, "DCT CR", "gray")
+
+    return y_dct, cb_dct, cr_dct
+
+def dct_invert(y_dct, cb_dct, cr_dct):
+
+    y_idct = idct(idct(y_dct, norm="ortho").T, norm="ortho").T
+    cb_idct = idct(idct(cb_dct, norm="ortho").T, norm="ortho").T
+    cr_idct = idct(idct(cr_dct, norm="ortho").T, norm="ortho").T
+
+    showImageColormap(y_idct, "INVERT DCT y", "gray")
+    showImageColormap(cb_idct, "INVERT DCT cb", "gray")
+    showImageColormap(cr_idct, "INVERT DCT cr", "gray")
+    
+    return y_idct, cb_idct, cr_idct
+
 def down_sampling(cb, cr):
     height, width = cr.shape[:2]
     xcb = 0
