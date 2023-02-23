@@ -17,23 +17,23 @@ no decoder: fazer o contrario se foi reduzido a metade passar para o dobro (oper
 usar dct sobre os canais que queremos
 """
 
+factor = (4, 2, 0)
 
 def encoder(img):
     #print(img.shape)
     #3) Color maps RGB
     R, G, B , cmRed, cmGreen, cmBlue = colorMapEnc(img)
-    
         
     #4) Padding
     #padding_img , l , c= padding(img)
     R_padding, l, c = padding(R, cmRed)
     G_padding, l, c = padding(G, cmGreen)
     B_padding, l, c = padding(B, cmBlue)
-    
+    print("--------->" + str(R_padding.shape))
 
     #5) Convert to YCbCr
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
-    down_sampling(cb, cr, (4, 2, 1))
+    cb, cr = down_sampling(cb, cr)
 
 
     return y, cb, cr ,l, c 
@@ -45,6 +45,8 @@ def decoder(y, cb, cr, line, col):
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
     
+    cb, cr = up_sampling(cb, cr)
+
     R_dec, G_dec, B_dec = convert_rgb(y, cb, cr)
     
     
@@ -61,7 +63,7 @@ def decoder(y, cb, cr, line, col):
     join_channels(R_upad, G_upad, B_upad, line, col)
     
     
-def down_sampling(cb, cr, factor):
+def down_sampling(cb, cr):
     height, width = cr.shape[:2]
     xcb = 0
     xcr = 0
@@ -104,7 +106,57 @@ def down_sampling(cb, cr, factor):
     showImageColormap(cr_d, "down_cr", "gray")
 
     return cb_d, cr_d
+
     
+def up_sampling(cb_d , cr_d):
+    print("aqui")
+    print(cb_d.shape)
+    print(cr_d.shape)
+
+
+    hr, wr = cr_d.shape[:2]
+    hb, wb = cb_d.shape[:2]
+    xcb = 0
+    xcr = 0
+    aux = 0
+    cb = 0
+    cr = 0
+
+    if factor[2] != 0:
+        aux = 1
+        xcb = factor[0] / factor[2]
+        xcr = factor[0] / factor[1]
+    else:
+        xcb = factor[0] / factor[1]
+        xcr = factor[0] / factor[1]
+
+    print(xcb)
+    print(xcr)
+    
+    if aux == 1:
+        width_cb = int(wb * xcb)
+        width_cr = int(wr * xcr)
+
+        cb = cv2.resize(cb_d, (width_cb, hb), interpolation=cv2.INTER_AREA)
+        cr = cv2.resize(cr_d, (width_cr, hr), interpolation=cv2.INTER_AREA)
+    
+    else:
+        height_cb = int(hb * xcb)
+        width_cb = int(wb * xcb)
+        
+        height_cr = int(hr * xcr)
+        width_cr = int(wr * xcr)
+
+        cb = cv2.resize(cb_d, (width_cb, height_cb), interpolation=cv2.INTER_AREA)
+        cr = cv2.resize(cr_d, (width_cr, height_cr), interpolation=cv2.INTER_AREA)
+    
+
+    showImageColormap(cb, "up_cb", "gray")
+    showImageColormap(cr, "up_cr", "gray")
+    print(cb.shape)
+    print(cr.shape)
+
+    return cb, cr
 
 def join_channels(R, G, B, line, col):
     
@@ -277,7 +329,7 @@ def main():
     imgx = img1
 
     y, cb, cr, line, col = encoder(imgx)
-    #decoder(y,cb ,cr ,line, col)
+    decoder(y,cb ,cr ,line, col)
 
 if __name__ == '__main__':
     main()
