@@ -17,10 +17,10 @@ no decoder: fazer o contrario se foi reduzido a metade passar para o dobro (oper
 usar dct sobre os canais que queremos
 """
 
-factor = (4, 2, 0)
+factor = (4, 2, 1)
 
 def encoder(img):
-    #print(img.shape)
+    
     #3) Color maps RGB
     R, G, B , cmRed, cmGreen, cmBlue = colorMapEnc(img)
         
@@ -29,7 +29,7 @@ def encoder(img):
     R_padding, l, c = padding(R, cmRed)
     G_padding, l, c = padding(G, cmGreen)
     B_padding, l, c = padding(B, cmBlue)
-    print("--------->" + str(R_padding.shape))
+    
 
     #5) Convert to YCbCr
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
@@ -109,10 +109,6 @@ def down_sampling(cb, cr):
 
     
 def up_sampling(cb_d , cr_d):
-    print("aqui")
-    print(cb_d.shape)
-    print(cr_d.shape)
-
 
     hr, wr = cr_d.shape[:2]
     hb, wb = cb_d.shape[:2]
@@ -130,8 +126,6 @@ def up_sampling(cb_d , cr_d):
         xcb = factor[0] / factor[1]
         xcr = factor[0] / factor[1]
 
-    print(xcb)
-    print(xcr)
     
     if aux == 1:
         width_cb = int(wb * xcb)
@@ -153,8 +147,6 @@ def up_sampling(cb_d , cr_d):
 
     showImageColormap(cb, "up_cb", "gray")
     showImageColormap(cr, "up_cr", "gray")
-    print(cb.shape)
-    print(cr.shape)
 
     return cb, cr
 
@@ -187,17 +179,6 @@ def colorMapEnc(img):
     showImageColormap(G, "G", cmGreen)
     showImageColormap(B, "B", cmBlue)
 
-    """
-    #Decoder
-    [nl, nc, ch] = img.shape
-    imgRec = np.zeros((nl, nc, ch))
-    
-    
-    imgRec[:,:,0] = R
-    imgRec[:,:,1] = G
-    imgRec[:,:,2] = B
-    showImageColormap(imgRec.astype(np.uint8), "RGB")
-    """
     return R, G, B, cmRed, cmGreen, cmBlue
     
 
@@ -227,7 +208,6 @@ def padding(img, colormap = None):
 
     showImageColormap(xt, "Padding", colormap)
     
-    #print(xt.shape)
     
     return xt, line, col
 
@@ -236,10 +216,7 @@ def padding(img, colormap = None):
 def padding_inv(padding_img, line, col):
     nl = (padding_img.shape[0] - line)
     nc = (padding_img.shape[1] - col)
-   # print(padding_img)
-    #print(padding_img.shape[1])
-    #print(col)
-    #print(padding_img[0][0].astype)
+
     un_padding = padding_img[:-nl,:-nc]
     
     
