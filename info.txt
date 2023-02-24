@@ -108,4 +108,71 @@ R [R > 255] = 255 (antes do cast)
 R [R < 0] = 0
 R = np.round(R).astype(np.uint8)
 
+------------------------
+
 xr = xp[:nl, :nc] (remover as linhas extra do padding)
+
+#SAMPLING (6)
+ 4:1:2 Cr media de 4 valores e Cb media de 2 valores
+ 4:2:0 Ambos os canais sao comprimmidos de igual forma (2:1), mas na Horizontal e na Vertical
+ import cv2
+ cv2.resize(matriz, fatores de compressao, tipo de interpolacao (linear, cubica, etc))
+                       (4:2:2)              (4:2:0)
+       300x300         150(H):300(V)        150(H):150(V)
+       
+no decoder: fazer o contrario se foi reduzido a metade passar para o dobro (operaçao destrutiva)
+#DCT (7)
+usar dct sobre os canais que queremos
+
+
+-------------------------------------
+
+8.) Quantizaçao
+
+slide 28
+
+primeiro valor é coeficiente DC 
+
+imagem 2 regiao de altas frequencias (canto inferior direito) tem valores baixos, perto de zero
+
+slide 30
+
+mais bits para as baixas frequencias e menos para as altas (olho humano mais sensivel as baixas frequencias)
+logo menos bits para as altas
+
+slide 31 / 32 (matrizes) / 34
+
+ROUND(resultado da dct / matriz de Quantizaçao)
+
+imagem suave tem muitos zeros!!!
+
+A CADA BLOCO 8X8 APLICAR A MATRIZ DE QUNATIZACAO
+
+DECODER:
+
+(resultado da quantizacao * matriz de quantizaçao)
+
+erros elevados nas altas frequencias, por causa dos zeros
+conclusao: imagens abruptas ficam todas rebentadas na reconstruçao 
+
+Fatores de qualidade:
+
+mais qualidade -> menores os valores da matriz de quantizaçao 
+
+aplicar fator de escala (multiplicar o fator pela matriz de quantizacao)!!!! slide 40
+
+se a qualidade for maxima a matriz de quantizacao só tem uns (1)
+
+ATENÇAO!!!! OS valores da matriz de quantizacao deve ter valores entre 1 e 255 (uint8)
+
+9.) Codificaçao DPCM
+
+slide 43
+
+Huffman 
+
+diferença entre o coeficiente do bloco com o anterior (valores mais pequenos -> menos bits)
+
+O primeiro coeficiente de uma linha faz a diferença com o ultimo coeficiente do bloco da linha anterior!!! 
+
+

@@ -4,28 +4,14 @@ import matplotlib.colors as clr
 import cv2
 from scipy.fftpack import dct, idct
 
-
-"""
-#SAMPLING (6)
- 4:1:2 Cr media de 4 valores e Cb media de 2 valores
- 4:2:0 Ambos os canais sao comprimmidos de igual forma (2:1), mas na Horizontal e na Vertical
- import cv2
- cv2.resize(matriz, fatores de compressao, tipo de interpolacao (linear, cubica, etc))
-                       (4:2:2)              (4:2:0)
-       300x300         150(H):300(V)        150(H):150(V)
-       
-no decoder: fazer o contrario se foi reduzido a metade passar para o dobro (operaçao destrutiva)
-#DCT (7)
-usar dct sobre os canais que queremos
-"""
-
 factor = (4, 2, 1)
+blocos = 8
 
 def encoder(img):
     
     #3) Color maps RGB
     R, G, B , cmRed, cmGreen, cmBlue = colorMapEnc(img)
-        
+    
     #4) Padding
     #padding_img , l , c= padding(img)
     R_padding, l, c = padding(R, cmRed)
@@ -37,7 +23,46 @@ def encoder(img):
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
     cb, cr = down_sampling(cb, cr)
 
-    y_dct, cb_dct, cr_dct = dct_convert(y, cb, cr)
+    # DCT SEM BLOCOS
+    """
+    y_dct = dct_convert(y)
+
+    plt.figure()
+    plt.title("DCT y")
+    plt.imshow(np.log(np.abs(y_dct) + 0.0001))
+
+    cb_dct = dct_convert(cb)
+
+    plt.figure()
+    plt.title("DCT cb")
+    plt.imshow(np.log(np.abs(cb_dct) + 0.0001))
+
+    cr_dct = dct_convert(cr)
+
+    plt.figure()
+    plt.title("DCT cr")
+    plt.imshow(np.log(np.abs(cr_dct) + 0.0001))
+    """
+
+    # DCT BLOCOS 8x8
+    y_dct = dct_blocks(blocos, y)
+
+    plt.figure()
+    plt.title("DCT y 8x8")
+    plt.imshow(np.log(np.abs(y_dct) + 0.0001), "gray")
+
+    cb_dct = dct_blocks(blocos, cb)
+    
+    plt.figure()
+    plt.title("DCT cb 8x8")
+    plt.imshow(np.log(np.abs(cb_dct) + 0.0001), "gray")
+    
+    cr_dct = dct_blocks(blocos, cr)
+
+    plt.figure()
+    plt.title("DCT cr 8x8")
+    plt.imshow(np.log(np.abs(cr_dct) + 0.0001), "gray")
+
 
     return y_dct, cb_dct, cr_dct, l, c 
     
@@ -47,9 +72,26 @@ def decoder(y, cb, cr, line, col):
     cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
-    
-    y, cb, cr = dct_invert(y, cb, cr)
 
+    # INVERT DCT SEM BLOCOS
+    """
+    y = dct_invert(y)
+    showImageColormap(y, "INVERT DCT y", "gray")
+    cb = dct_invert(cb)
+    showImageColormap(cb, "INVERT DCT cb", "gray")
+    cr = dct_invert(cr)
+    showImageColormap(cr, "INVERT DCT cr", "gray")
+    """
+    # INVERT DCT BLOCOS 8x8
+
+    y = inverse_dct_blocks(blocos, y)
+    showImageColormap(y, "INVERT DCT y", "gray")
+    cb = inverse_dct_blocks(blocos, cb)
+    showImageColormap(cb, "INVERT DCT cb", "gray")
+    cr = inverse_dct_blocks(blocos, cr)
+    showImageColormap(cr, "INVERT DCT cr", "gray")
+
+    # UPSAMPLING    
     cb, cr = up_sampling(cb, cr)
 
     R_dec, G_dec, B_dec = convert_rgb(y, cb, cr)
@@ -66,41 +108,53 @@ def decoder(y, cb, cr, line, col):
     
     
     join_channels(R_upad, G_upad, B_upad, line, col)
+
+
+def dct_blocks(num, img):
+    lin, col = img.shape
+
+    h = lin / num
+    w = col / num
+
+    for i in range(int(h)):
+        for j in range(int(w)):
+            block = img[i*num:(i+1)*num, j*num:(j+1)*num]
+
+            block_dct = dct_convert(block)
+
+            img[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
+
+    return img
+
+def inverse_dct_blocks(num, img):
+    lin, col = img.shape
+
+    h = lin / num
+    w = col / num
+
+    for i in range(int(h)):
+        for j in range(int(w)):
+            block = img[i*num:(i+1)*num, j*num:(j+1)*num]
+
+            block_dct = dct_invert(block)
+
+            img[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
+
+    return img
+
+
+
+def dct_convert(block):
+
+    block_dct = dct(dct(block, norm="ortho").T, norm="ortho").T
+
+    return block_dct
+
+def dct_invert(block):
+
+    block_idct = idct(idct(block, norm="ortho").T, norm="ortho").T
     
-
-def dct_convert(y_d, cb_d, cr_d):
-
-    y_dct = dct(dct(y_d, norm="ortho").T, norm="ortho").T
-    cb_dct = dct(dct(cb_d, norm="ortho").T, norm="ortho").T
-    cr_dct = dct(dct(cr_d, norm="ortho").T, norm="ortho").T
-
-    plt.figure()
-    plt.title("DCT y")
-    plt.imshow(np.log(np.abs(y_dct) + 0.0001))
-    plt.figure()
-    plt.title("DCT cb")
-    plt.imshow(np.log(np.abs(cb_dct) + 0.0001))
-    plt.figure()
-    plt.title("DCT cr")
-    plt.imshow(np.log(np.abs(cr_dct) + 0.0001))
-    
-    #showImageColormap(y_dct, "DCT Y", "gray")
-    #showImageColormap(cb_dct, "DCT CB", "gray")
-    #showImageColormap(cr_dct, "DCT CR", "gray")
-
-    return y_dct, cb_dct, cr_dct
-
-def dct_invert(y_dct, cb_dct, cr_dct):
-
-    y_idct = idct(idct(y_dct, norm="ortho").T, norm="ortho").T
-    cb_idct = idct(idct(cb_dct, norm="ortho").T, norm="ortho").T
-    cr_idct = idct(idct(cr_dct, norm="ortho").T, norm="ortho").T
-
-    showImageColormap(y_idct, "INVERT DCT y", "gray")
-    showImageColormap(cb_idct, "INVERT DCT cb", "gray")
-    showImageColormap(cr_idct, "INVERT DCT cr", "gray")
-    
-    return y_idct, cb_idct, cr_idct
+    return block_idct
 
 def down_sampling(cb, cr):
     height, width = cr.shape[:2]
