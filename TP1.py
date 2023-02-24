@@ -35,6 +35,9 @@ quant_cbcr = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                        [99, 99, 99, 99, 99, 99, 99, 99],
                        [99, 99, 99, 99, 99, 99, 99, 99]])
 
+# Fator de qualidade na quantizaçao
+quality = 50
+
 def encoder(img):
     
     #3) Color maps RGB
@@ -91,17 +94,19 @@ def encoder(img):
     plt.title("DCT cr 8x8")
     plt.imshow(np.log(np.abs(cr_dct) + 0.0001), "gray")
 
-    y_quant = quantization(blocos, y_dct, 0)
+    aux_quant_y, aux_quant_cbcr = calc_quality()
+
+    y_quant = quantization(blocos, y_dct, 0, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("DCT y 8x8 QUANTIZACAO")
     plt.imshow(np.log(np.abs(y_quant) + 0.0001), "gray")
 
-    cb_quant = quantization(blocos, cb_dct, 1)
+    cb_quant = quantization(blocos, cb_dct, 1, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("DCT cb 8x8 QUANTIZACAO")
     plt.imshow(np.log(np.abs(cb_quant) + 0.0001), "gray")
     
-    cr_quant = quantization(blocos, cr_dct, 1)
+    cr_quant = quantization(blocos, cr_dct, 1, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("DCT cr 8x8 QUANTIZACAO")
     plt.imshow(np.log(np.abs(cr_quant) + 0.0001), "gray")
@@ -116,15 +121,20 @@ def decoder(y_quant, cb_quant, cr_quant, line, col):
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
 
-    y = invert_quantization(blocos, y_quant, 0)
+    aux_quant_y = 0
+    aux_quant_cbcr = 0
+
+    aux_quant_y, aux_quant_cbcr = calc_quality()
+
+    y = invert_quantization(blocos, y_quant, 0, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("INVERT QUANTIZATION y")
     plt.imshow(np.log(np.abs(y) + 0.0001), "gray")
-    cb = invert_quantization(blocos, cb_quant, 1)
+    cb = invert_quantization(blocos, cb_quant, 1, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("INVERT QUANTIZATION cb")
     plt.imshow(np.log(np.abs(cb) + 0.0001), "gray")
-    cr = invert_quantization(blocos, cr_quant, 1)
+    cr = invert_quantization(blocos, cr_quant, 1, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("INVERT QUANTIZATION cr")
     plt.imshow(np.log(np.abs(cr) + 0.0001), "gray")
@@ -165,9 +175,38 @@ def decoder(y_quant, cb_quant, cr_quant, line, col):
     
     join_channels(R_upad, G_upad, B_upad, line, col)
 
-def quantization(num, img, aux):
+def calc_quality():
+    aux_quality = 0
+    aux_quant_y = 0
+    aux_quant_cbcr = 0
+
+    if quality >= 50:
+        aux_quality = (100 - quality) / 50
+    elif quality == 0:
+        aux_quality = 50
+    elif quality < 50:
+        aux_quality = 50 / quality
+
+    if quality == 100:
+        aux_quant_y = np.ones_like(quant_y)
+        aux_quant_cbcr = np.ones_like(quant_cbcr)
+    else:
+        aux_quant_y = quant_y * aux_quality
+        aux_quant_cbcr = quant_cbcr * aux_quality
+    aux_quant_y[aux_quant_y > 255] = 255
+    aux_quant_y[aux_quant_y < 0] = 0
+    aux_quant_y = np.round(aux_quant_y).astype(np.uint8)
+    aux_quant_cbcr[aux_quant_cbcr > 255] = 255
+    aux_quant_cbcr[aux_quant_cbcr < 0] = 0
+    aux_quant_cbcr = np.round(aux_quant_cbcr).astype(np.uint8)
+
+    return aux_quant_y, aux_quant_cbcr
+
+def quantization(num, img, aux, aux_quant_y, aux_quant_cbcr):
     lin, col = img.shape
     temp = np.zeros_like(img)
+    aux_quality = 0
+    aux_quant = 0
 
     h = lin / num
     w = col / num
@@ -177,17 +216,19 @@ def quantization(num, img, aux):
             block = img[i*num:(i+1)*num, j*num:(j+1)*num]
 
             if aux == 0:
-                block_dct = np.round(block / quant_y)
+                block_dct = np.round(block / aux_quant_y)
             else:
-                block_dct = np.round(block / quant_cbcr)
+                block_dct = np.round(block / aux_quant_cbcr)
 
             temp[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
 
     return temp
 
-def invert_quantization(num, img, aux):
+def invert_quantization(num, img, aux, aux_quant_y, aux_quant_cbcr):
     lin, col = img.shape
     temp = np.zeros_like(img)
+    aux_quality = 0
+    aux_quant = 0
 
     h = lin / num
     w = col / num
@@ -197,9 +238,9 @@ def invert_quantization(num, img, aux):
             block = img[i*num:(i+1)*num, j*num:(j+1)*num]
 
             if aux == 0:
-                block_dct = block * quant_y
+                block_dct = block * aux_quant_y
             else:
-                block_dct = block * quant_cbcr
+                block_dct = block * aux_quant_cbcr
 
             temp[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
 
