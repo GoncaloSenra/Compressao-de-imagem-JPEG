@@ -91,14 +91,43 @@ def encoder(img):
     plt.title("DCT cr 8x8")
     plt.imshow(np.log(np.abs(cr_dct) + 0.0001), "gray")
 
+    y_quant = quantization(blocos, y_dct, 0)
+    plt.figure()
+    plt.title("DCT y 8x8 QUANTIZACAO")
+    plt.imshow(np.log(np.abs(y_quant) + 0.0001), "gray")
 
-    return y_dct, cb_dct, cr_dct, l, c 
+    cb_quant = quantization(blocos, cb_dct, 1)
+    plt.figure()
+    plt.title("DCT cb 8x8 QUANTIZACAO")
+    plt.imshow(np.log(np.abs(cb_quant) + 0.0001), "gray")
+    
+    cr_quant = quantization(blocos, cr_dct, 1)
+    plt.figure()
+    plt.title("DCT cr 8x8 QUANTIZACAO")
+    plt.imshow(np.log(np.abs(cr_quant) + 0.0001), "gray")
 
-def decoder(y, cb, cr, line, col):
+
+
+    return y_quant, cb_quant, cr_quant, l, c 
+
+def decoder(y_quant, cb_quant, cr_quant, line, col):
     
     cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
+
+    y = invert_quantization(blocos, y_quant, 0)
+    plt.figure()
+    plt.title("INVERT QUANTIZATION y")
+    plt.imshow(np.log(np.abs(y) + 0.0001), "gray")
+    cb = invert_quantization(blocos, cb_quant, 1)
+    plt.figure()
+    plt.title("INVERT QUANTIZATION cb")
+    plt.imshow(np.log(np.abs(cb) + 0.0001), "gray")
+    cr = invert_quantization(blocos, cr_quant, 1)
+    plt.figure()
+    plt.title("INVERT QUANTIZATION cr")
+    plt.imshow(np.log(np.abs(cr) + 0.0001), "gray")
 
     # INVERT DCT SEM BLOCOS
     """
@@ -136,8 +165,45 @@ def decoder(y, cb, cr, line, col):
     
     join_channels(R_upad, G_upad, B_upad, line, col)
 
-def quantization(num, img):
-    pass
+def quantization(num, img, aux):
+    lin, col = img.shape
+    temp = np.zeros_like(img)
+
+    h = lin / num
+    w = col / num
+
+    for i in range(int(h)):
+        for j in range(int(w)):
+            block = img[i*num:(i+1)*num, j*num:(j+1)*num]
+
+            if aux == 0:
+                block_dct = np.round(block / quant_y)
+            else:
+                block_dct = np.round(block / quant_cbcr)
+
+            temp[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
+
+    return temp
+
+def invert_quantization(num, img, aux):
+    lin, col = img.shape
+    temp = np.zeros_like(img)
+
+    h = lin / num
+    w = col / num
+
+    for i in range(int(h)):
+        for j in range(int(w)):
+            block = img[i*num:(i+1)*num, j*num:(j+1)*num]
+
+            if aux == 0:
+                block_dct = block * quant_y
+            else:
+                block_dct = block * quant_cbcr
+
+            temp[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
+
+    return temp
 
 def dct_blocks(num, img):
     lin, col = img.shape
