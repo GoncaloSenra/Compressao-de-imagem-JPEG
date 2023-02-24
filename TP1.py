@@ -4,8 +4,36 @@ import matplotlib.colors as clr
 import cv2
 from scipy.fftpack import dct, idct
 
+# Fator de sub-amostragem
 factor = (4, 2, 1)
+
+# Dimensao dos blocos DCT
 blocos = 8
+
+# Matriz de conversao YCbCr
+mat = np.array([[0.299, 0.587, 0.114], 
+                [-0.168736, -0.331264, 0.5], 
+                [0.5, -0.418688, -0.081312]])
+
+# Matriz de quantizacao de Y
+quant_y = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                    [12, 12, 14, 19, 26, 58, 60, 55],
+                    [14, 13, 16, 24, 40, 57, 69, 56],
+                    [14, 17, 22, 29, 51, 87, 80, 62],
+                    [18, 22, 37, 56, 68, 109, 103, 77],
+                    [24, 35, 55, 64, 81, 104, 113, 92],
+                    [49, 64, 78, 87, 103, 121, 120, 101],
+                    [72, 92, 95, 98, 112, 100, 103, 99]])
+
+# Matriz de quantizacao de CbCr
+quant_cbcr = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
+                       [18, 21, 26, 66, 99, 99, 99, 99],
+                       [24, 26, 56, 99, 99, 99, 99, 99],
+                       [47, 66, 99, 99, 99, 99, 99, 99],
+                       [99, 99, 99, 99, 99, 99, 99, 99],
+                       [99, 99, 99, 99, 99, 99, 99, 99],
+                       [99, 99, 99, 99, 99, 99, 99, 99],
+                       [99, 99, 99, 99, 99, 99, 99, 99]])
 
 def encoder(img):
     
@@ -65,7 +93,6 @@ def encoder(img):
 
 
     return y_dct, cb_dct, cr_dct, l, c 
-    
 
 def decoder(y, cb, cr, line, col):
     
@@ -109,6 +136,8 @@ def decoder(y, cb, cr, line, col):
     
     join_channels(R_upad, G_upad, B_upad, line, col)
 
+def quantization(num, img):
+    pass
 
 def dct_blocks(num, img):
     lin, col = img.shape
@@ -141,8 +170,6 @@ def inverse_dct_blocks(num, img):
             img[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
 
     return img
-
-
 
 def dct_convert(block):
 
@@ -200,7 +227,6 @@ def down_sampling(cb, cr):
 
     return cb_d, cr_d
 
-    
 def up_sampling(cb_d , cr_d):
 
     hr, wr = cr_d.shape[:2]
@@ -256,7 +282,6 @@ def join_channels(R, G, B, line, col):
     
     showImageColormap(imgRec.astype(np.uint8), "Decoded image")
     
-
 def colorMapEnc(img):
     
     cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
@@ -274,7 +299,6 @@ def colorMapEnc(img):
 
     return R, G, B, cmRed, cmGreen, cmBlue
     
-
 def padding(img, colormap = None):
 
     xp = img
@@ -304,8 +328,6 @@ def padding(img, colormap = None):
     
     return xt, line, col
 
-
-
 def padding_inv(padding_img, line, col):
     nl = (padding_img.shape[0] - line)
     nc = (padding_img.shape[1] - col)
@@ -318,10 +340,7 @@ def padding_inv(padding_img, line, col):
     return un_padding
     #print(ipad.shape)
 
-
-
 def convert_ycbcr(R, G, B):
-    mat = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5], [0.5, -0.418688, -0.081312]])
 
     #y = np.dot(img, mat.T)
     
@@ -347,7 +366,6 @@ def convert_ycbcr(R, G, B):
     return y, cb, cr
 
 def convert_rgb(y, cb, cr):
-    mat = np.array([[0.299, 0.587, 0.114], [-0.168736, -0.331264, 0.5], [0.5, -0.418688, -0.081312]])
 
     matI = np.linalg.inv(mat)
     
@@ -377,9 +395,7 @@ def convert_rgb(y, cb, cr):
     #showImageColormap(B, "B_conver_rgb")
     
     return R, G, B
- 
     
-#3.3) 
 def showImageColormap(auxColormap1, title = None, auxColormap2 = None):
     plt.figure()
     plt.axis("off")
@@ -387,8 +403,7 @@ def showImageColormap(auxColormap1, title = None, auxColormap2 = None):
         plt.title(title)
     plt.imshow(auxColormap1, auxColormap2)
     plt.show()
-
-    
+  
 def main():
     #Ler imagens
     img1 = plt.imread('imagens/barn_mountains.bmp')
