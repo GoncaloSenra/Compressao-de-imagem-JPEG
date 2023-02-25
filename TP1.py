@@ -5,7 +5,7 @@ import cv2
 from scipy.fftpack import dct, idct
 
 # Fator de sub-amostragem
-factor = (4, 2, 1)
+factor = (4, 2, 2)
 
 # Dimensao dos blocos DCT
 blocos = 8
@@ -36,7 +36,7 @@ quant_cbcr = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                        [99, 99, 99, 99, 99, 99, 99, 99]])
 
 # Fator de qualidade na quantizaçao
-quality = 50
+quality = 75
 
 def encoder(img):
     
@@ -55,71 +55,91 @@ def encoder(img):
     cb, cr = down_sampling(cb, cr)
 
     # DCT SEM BLOCOS
-    """
+    
     y_dct = dct_convert(y)
 
     plt.figure()
     plt.title("DCT y")
-    plt.imshow(np.log(np.abs(y_dct) + 0.0001))
+    plt.imshow(np.log(np.abs(y_dct) + 0.0001), "gray")
 
     cb_dct = dct_convert(cb)
 
     plt.figure()
     plt.title("DCT cb")
-    plt.imshow(np.log(np.abs(cb_dct) + 0.0001))
+    plt.imshow(np.log(np.abs(cb_dct) + 0.0001), "gray")
 
     cr_dct = dct_convert(cr)
 
     plt.figure()
     plt.title("DCT cr")
-    plt.imshow(np.log(np.abs(cr_dct) + 0.0001))
-    """
+    plt.imshow(np.log(np.abs(cr_dct) + 0.0001), "gray")
+    
 
     # DCT BLOCOS 8x8
-    y_dct = dct_blocks(blocos, y)
+    yb_dct = dct_blocks(blocos, y)
 
     plt.figure()
     plt.title("DCT y 8x8")
-    plt.imshow(np.log(np.abs(y_dct) + 0.0001), "gray")
+    plt.imshow(np.log(np.abs(yb_dct) + 0.0001), "gray")
 
-    cb_dct = dct_blocks(blocos, cb)
+    cbb_dct = dct_blocks(blocos, cb)
     
     plt.figure()
     plt.title("DCT cb 8x8")
-    plt.imshow(np.log(np.abs(cb_dct) + 0.0001), "gray")
+    plt.imshow(np.log(np.abs(cbb_dct) + 0.0001), "gray")
     
-    cr_dct = dct_blocks(blocos, cr)
+    crb_dct = dct_blocks(blocos, cr)
 
     plt.figure()
     plt.title("DCT cr 8x8")
-    plt.imshow(np.log(np.abs(cr_dct) + 0.0001), "gray")
+    plt.imshow(np.log(np.abs(crb_dct) + 0.0001), "gray")
 
+    # QUANTIZACAO
+
+    # Calcular matriz de quantizaçao consoante o fator de qualidade escolhido
     aux_quant_y, aux_quant_cbcr = calc_quality()
 
-    y_quant = quantization(blocos, y_dct, 0, aux_quant_y, aux_quant_cbcr)
+    y_quant = quantization(blocos, yb_dct, 0, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("DCT y 8x8 QUANTIZACAO")
     plt.imshow(np.log(np.abs(y_quant) + 0.0001), "gray")
 
-    cb_quant = quantization(blocos, cb_dct, 1, aux_quant_y, aux_quant_cbcr)
+    cb_quant = quantization(blocos, cbb_dct, 1, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("DCT cb 8x8 QUANTIZACAO")
     plt.imshow(np.log(np.abs(cb_quant) + 0.0001), "gray")
     
-    cr_quant = quantization(blocos, cr_dct, 1, aux_quant_y, aux_quant_cbcr)
+    cr_quant = quantization(blocos, crb_dct, 1, aux_quant_y, aux_quant_cbcr)
     plt.figure()
     plt.title("DCT cr 8x8 QUANTIZACAO")
     plt.imshow(np.log(np.abs(cr_quant) + 0.0001), "gray")
 
+    y_dpcm = DPCM (blocos, y_quant)
+    plt.figure()
+    plt.title("y DCPM")
+    plt.imshow(np.log(np.abs(y_dpcm) + 0.0001), "gray")
+    
+    cb_dpcm = DPCM (blocos, cb_quant)
+    plt.figure()
+    plt.title("cb DCPM")
+    plt.imshow(np.log(np.abs(cb_dpcm) + 0.0001), "gray")
+    
+    cr_dpcm = DPCM (blocos, cr_quant)
+    plt.figure()
+    plt.title("cr DCPM")
+    plt.imshow(np.log(np.abs(cr_dpcm) + 0.0001), "gray")
 
+    return y_dpcm, cb_dpcm, cr_dpcm, l, c 
 
-    return y_quant, cb_quant, cr_quant, l, c 
-
-def decoder(y_quant, cb_quant, cr_quant, line, col):
+def decoder(y_dpcm, cb_dpcm, cr_dpcm, line, col):
     
     cmRed = clr.LinearSegmentedColormap.from_list('red', [(0,0,0), (1,0,0)], 256)
     cmGreen = clr.LinearSegmentedColormap.from_list('green', [(0,0,0), (0,1,0)], 256)
     cmBlue = clr.LinearSegmentedColormap.from_list('blue', [(0,0,0), (0,0,1)], 256)
+
+    y_quant = invert_DPCM(blocos, y_dpcm)
+    cb_quant = invert_DPCM(blocos, cb_dpcm)
+    cr_quant = invert_DPCM(blocos, cr_dpcm)
 
     aux_quant_y = 0
     aux_quant_cbcr = 0
@@ -174,6 +194,40 @@ def decoder(y_quant, cb_quant, cr_quant, line, col):
     
     
     join_channels(R_upad, G_upad, B_upad, line, col)
+
+def DPCM(num, img):
+    lin, col = img.shape
+    temp = 0
+
+    h = lin / num
+    w = col / num
+
+    for i in range(int(h)):
+        for j in range(int(w)):
+            block = img[i*num:(i+1)*num, j*num:(j+1)*num]
+
+            aux = block[0, 0] - temp
+            temp = block[0, 0]
+            block[0, 0] = aux
+            
+    return img
+
+def invert_DPCM(num, img):
+    lin, col = img.shape
+    temp = 0
+
+    h = lin / num
+    w = col / num
+
+    for i in range(int(h)):
+        for j in range(int(w)):
+            block = img[i*num:(i+1)*num, j*num:(j+1)*num]
+
+            block[0, 0] = block[0, 0] + temp
+            temp = block[0, 0]
+           
+    return img
+
 
 def calc_quality():
     aux_quality = 0
