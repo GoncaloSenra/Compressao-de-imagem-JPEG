@@ -36,7 +36,7 @@ quant_cbcr = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                        [99, 99, 99, 99, 99, 99, 99, 99]])
 
 # Fator de qualidade na quantizaçao
-quality = 75
+quality = 10
 
 def encoder(img):
     
@@ -250,10 +250,10 @@ def calc_quality():
         aux_quant_y = quant_y * aux_quality
         aux_quant_cbcr = quant_cbcr * aux_quality
     aux_quant_y[aux_quant_y > 255] = 255
-    aux_quant_y[aux_quant_y < 0] = 0
+    aux_quant_y[aux_quant_y < 1] = 1
     aux_quant_y = np.round(aux_quant_y).astype(np.uint8)
     aux_quant_cbcr[aux_quant_cbcr > 255] = 255
-    aux_quant_cbcr[aux_quant_cbcr < 0] = 0
+    aux_quant_cbcr[aux_quant_cbcr < 1] = 1
     aux_quant_cbcr = np.round(aux_quant_cbcr).astype(np.uint8)
 
     return aux_quant_y, aux_quant_cbcr
@@ -278,7 +278,7 @@ def quantization(num, img, aux, aux_quant_y, aux_quant_cbcr):
 
             temp[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
 
-    return temp
+    return temp.astype(int)
 
 def invert_quantization(num, img, aux, aux_quant_y, aux_quant_cbcr):
     lin, col = img.shape
@@ -300,7 +300,7 @@ def invert_quantization(num, img, aux, aux_quant_y, aux_quant_cbcr):
 
             temp[i*num:(i+1)*num, j*num:(j+1)*num] = block_dct
 
-    return temp
+    return temp.astype(float)
 
 def dct_blocks(num, img):
     lin, col = img.shape
