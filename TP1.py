@@ -52,6 +52,8 @@ def encoder(img):
 
     #5) Convert to YCbCr
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
+
+    #6) DownSampling
     cb, cr = down_sampling(cb, cr)
 
     # DCT SEM BLOCOS
@@ -116,17 +118,17 @@ def encoder(img):
 
     y_dpcm = DPCM (blocos, y_quant)
     plt.figure()
-    plt.title("y DCPM")
+    plt.title("y DPCM")
     plt.imshow(np.log(np.abs(y_dpcm) + 0.0001), "gray")
     
     cb_dpcm = DPCM (blocos, cb_quant)
     plt.figure()
-    plt.title("cb DCPM")
+    plt.title("cb DPCM")
     plt.imshow(np.log(np.abs(cb_dpcm) + 0.0001), "gray")
     
     cr_dpcm = DPCM (blocos, cr_quant)
     plt.figure()
-    plt.title("cr DCPM")
+    plt.title("cr DPCM")
     plt.imshow(np.log(np.abs(cr_dpcm) + 0.0001), "gray")
 
     return y_dpcm, cb_dpcm, cr_dpcm, l, c 

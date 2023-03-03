@@ -175,4 +175,21 @@ diferença entre o coeficiente do bloco com o anterior (valores mais pequenos ->
 
 O primeiro coeficiente de uma linha faz a diferença com o ultimo coeficiente do bloco da linha anterior!!! 
 
+10.) codificaçao descodificaçao end-to-end
 
+E= abs(y-yRec)
+MSE = np.sum((img_original - img_reconstruida)**2)/(nl*nc)
+
+
+----------------- Joao Coelho ------------------------
+
+erro = abs(Y - Yreconstruido)
+
+Métricas de erro (slide 49):
+ -> MSE: np.sum((img - imgRec)**2) / (nl*nc)
+    img e imRec => INT8, !!! por isso converter para float antes de fazer o quadrado !!!
+    Tem de dar uma imagem preta com pintas brancas?
+
+ -> fazer igual para os outros
+
+ ----------------------------------------------------
