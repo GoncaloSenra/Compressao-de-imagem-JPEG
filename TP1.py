@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.colors as clr
 import cv2
+import math
 from scipy.fftpack import dct, idct
 
 # Fator de sub-amostragem
@@ -196,6 +197,7 @@ def decoder(y_dpcm, cb_dpcm, cr_dpcm, line, col):
     
     
     join_channels(R_upad, G_upad, B_upad, line, col)
+    return R_upad, G_upad, B_upad
 
 def DPCM(num, img):
     lin, col = img.shape
@@ -558,6 +560,35 @@ def convert_rgb(y, cb, cr):
     #showImageColormap(B, "B_conver_rgb")
     
     return R, G, B
+  
+def exe10(R, G, B, line, col, imgOriginal):
+    imgRec = np.zeros((line, col, 3))
+    
+    imgRec[:,:,0] = R
+    imgRec[:,:,1] = G
+    imgRec[:,:,2] = B
+    
+    #Imagem das diferencas
+
+    
+    #MSE
+    auxMSE = imgOriginal - imgRec
+    auxMSE = auxMSE.astype(np.float64)
+    MSE = np.sum((auxMSE)**2) / (line*col)
+    print("MSE value -> " + str(MSE))
+    
+    #RMSE
+    RMSE = math.sqrt(MSE)
+    print("RMSE value -> " + str(RMSE))
+    
+    #SNR
+    P = np.sum((imgOriginal.astype(np.float64))**2) / (line*col)
+    SNR = 10*(math.log10(P / MSE))
+    print("SNR value -> " + str(SNR))
+    
+    #PSNR
+    PSNR = 10*(math.log10(((imgOriginal.max()).astype(np.float64)**2)/MSE))
+    print("PSNR value -> " + str(PSNR))
     
 def showImageColormap(auxColormap1, title = None, auxColormap2 = None):
     plt.figure()
@@ -577,7 +608,8 @@ def main():
     imgx = img1
 
     y, cb, cr, line, col = encoder(imgx)
-    decoder(y,cb ,cr ,line, col)
+    R_rec, G_rec, B_rec = decoder(y,cb ,cr ,line, col) #alt
+    exe10(R_rec, G_rec, B_rec, line, col, imgx) ##alt
 
 if __name__ == '__main__':
     main()
