@@ -37,7 +37,8 @@ quant_cbcr = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                        [99, 99, 99, 99, 99, 99, 99, 99]])
 
 # Fator de qualidade na quantizaçao
-quality = 10
+quality = 75
+
 
 def encoder(img):
     
@@ -53,6 +54,7 @@ def encoder(img):
 
     #5) Convert to YCbCr
     y, cb, cr = convert_ycbcr(R_padding, G_padding, B_padding)
+    y_original = np.copy(y)
 
     #6) DownSampling
     cb, cr = down_sampling(cb, cr)
@@ -132,7 +134,7 @@ def encoder(img):
     plt.title("cr DPCM")
     plt.imshow(np.log(np.abs(cr_dpcm) + 0.0001), "gray")
 
-    return y_dpcm, cb_dpcm, cr_dpcm, l, c 
+    return y_dpcm, cb_dpcm, cr_dpcm, l, c, y_original 
 
 def decoder(y_dpcm, cb_dpcm, cr_dpcm, line, col):
     
@@ -183,6 +185,8 @@ def decoder(y_dpcm, cb_dpcm, cr_dpcm, line, col):
     # UPSAMPLING    
     cb, cr = up_sampling(cb, cr)
 
+    y_final = y
+
     R_dec, G_dec, B_dec = convert_rgb(y, cb, cr)
     
     
@@ -197,7 +201,7 @@ def decoder(y_dpcm, cb_dpcm, cr_dpcm, line, col):
     
     
     join_channels(R_upad, G_upad, B_upad, line, col)
-    return R_upad, G_upad, B_upad
+    return R_upad, G_upad, B_upad, y_final
 
 def DPCM(num, img):
     lin, col = img.shape
@@ -607,9 +611,12 @@ def main():
     #Escolher imagem
     imgx = img1
 
-    y, cb, cr, line, col = encoder(imgx)
-    R_rec, G_rec, B_rec = decoder(y,cb ,cr ,line, col) #alt
-    exe10(R_rec, G_rec, B_rec, line, col, imgx) ##alt
+    y, cb, cr, line, col, y_original = encoder(imgx)
+    R_rec, G_rec, B_rec, y_final = decoder(y,cb ,cr ,line, col)
+    exe10(R_rec, G_rec, B_rec, line, col, imgx)
+
+    showImageColormap(np.abs(y_original - y_final), "Diferença", "gray")
+
 
 if __name__ == '__main__':
     main()
